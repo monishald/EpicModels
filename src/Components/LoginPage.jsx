@@ -1,8 +1,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import Navbar from './Main'
-import { jwtDecode } from 'jwt-decode';
+// import { jwtDecode } from 'jwt-decode';
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { GoogleLogin } from "@react-oauth/google";
 
@@ -34,7 +33,6 @@ export default function Login() {
         mobileOtp: ""
     });
     const api = process.env.REACT_APP_URL;
-    const [message, setMessage] = useState("");
     const navigate = useNavigate(); 
 
     const [emailOtp, setEmailOtp] = useState("");
@@ -49,7 +47,7 @@ export default function Login() {
     const [mobileVerified, setMobileVerified] = useState(false);
     const [whatsappVerified, setWhatsappVerified] = useState(false);
 
-    const [mobileOtpMethod, setMobileOtpMethod] = useState("");
+    // const [mobileOtpMethod, setMobileOtpMethod] = useState("");
     const [showMobileOtpOptions, setShowMobileOtpOptions] = useState(false);
 
     const [otpType, setOtpType] = useState(""); // "email" or "mobile"
@@ -194,7 +192,7 @@ export default function Login() {
         if (!email && email === "") {
             setEmailVerified(false);
         }
-    }, [formData.mobilenumber, formData.email])
+    }, [formData])
 
     const handleSubmit = async () => {
         // e.preventDefault();
@@ -215,13 +213,13 @@ export default function Login() {
                 .then((res) => res.json())
                 .then((resData) => {
                     if (resData.success) {
-                        const decoded = jwtDecode(resData.token);
+                        // const decoded = jwtDecode(resData.token);
                         localStorage.setItem("token", resData.token);
-                        setMessage(resData.message);
+                        // setMessage(resData.message);
                     }
                     else {
                         console.log(resData.message)
-                        setMessage(resData.message);
+                        // setMessage(resData.message);(resData.message);
                     }
                 })
             alert("Login Successful");
@@ -283,17 +281,17 @@ export default function Login() {
                                 confirmpassword: "",
                                 countrycode: ""
                             })
-                            setMessage(resData.message);
+                            // setMessage(resData.message);(resData.message);
                             setIsLogin(false);
                             navigate("/login");
                         } else {
                             console.log(resData)
-                            setMessage(resData.message);
+                            // setMessage(resData.message);(resData.message);
                         }
                     })
                     .catch((err) => {
                         console.log("Error in registration:", err);
-                        setMessage("Trouble in connecting to server");
+                        // setMessage(resData.message);("Trouble in connecting to server");
 
                     });
                 // ✅ If all valid
@@ -341,23 +339,23 @@ export default function Login() {
 
 
     const sendOtp = async (type, method = "") => {
+        let _type = type === "email" ? "email" : method;
+        setOtpType(_type);
 
-        setOtpType(type);
-
-        let validate = false;
+        let validate = _type;
 
         // ================= EMAIL =================
-        if (type === "email") {
+        if (type === "email" && method === "") {
             validate = emailRegex.test(formData.email);
         }
 
         // ================= MOBILE =================
-        else if (type === "mobilenumber") {
+        else if (method === "mobilenumber") {
             validate = mobileRegex.test(formData.mobilenumber);
         }
 
         // ================= WHATSAPP =================
-        else if (type === "whatsappnumber") {
+        else if (method === "whatsappnumber") {
             validate = mobileRegex.test(formData.whatsappnumber);
         }
 
@@ -421,7 +419,7 @@ export default function Login() {
                     setMobileVerified(true);
                     setMobileTimer(30);
 
-                    setMobileOtpMethod(method);
+                    // setMobileOtpMethod(method);
                     setShowMobileOtpOptions(false);
 
                 }
@@ -429,12 +427,16 @@ export default function Login() {
                 // ================= WHATSAPP =================
                 else if (type === "whatsappnumber") {
 
-                    setMobileVerified(true);
+                    setWhatsappVerified(true);
                     setWhatsappTimer(30);
 
-                    setMobileOtpMethod("whatsapp");
+                    // setMobileOtpMethod("whatsapp");
                     setShowMobileOtpOptions(false);
 
+                }
+
+                else {
+                    alert(data.message || "Unable to send OTP");
                 }
 
             } else {
@@ -449,7 +451,7 @@ export default function Login() {
 
                     setMobileVerified(true);
                     setMobileTimer(30);
-                    setMobileOtpMethod("mobile");
+                    // setMobileOtpMethod("mobile");
                     setShowMobileOtpOptions(false);
 
                 }
@@ -457,7 +459,7 @@ export default function Login() {
 
                     setWhatsappVerified(true);
                     setWhatsappTimer(30);
-                    setMobileOtpMethod("whatsapp");
+                    // setMobileOtpMethod("whatsapp");
                     setShowMobileOtpOptions(false);
 
                 }
@@ -1078,7 +1080,7 @@ export default function Login() {
                                                 <button
                                                     disabled={emailOtp.length < 6}
                                                     onClick={() =>
-                                                        verifyOtp("email")
+                                                        verifyOtp()
                                                     }
                                                     className="h-11 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold text-sm"
                                                 >
@@ -1188,9 +1190,7 @@ export default function Login() {
                                                     formData.mobilenumber
                                                 )
                                             }
-                                            onClick={() =>
-                                                sendOtp("mobilenumber")
-                                            }
+                                            onClick={() => setShowMobileOtpOptions(true)}
                                             className="h-11 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-semibold text-sm transition"
                                         >
                                             Send OTP
@@ -1260,7 +1260,7 @@ export default function Login() {
                                                 <button
                                                     disabled={mobileOtp.length < 6}
                                                     onClick={() =>
-                                                        verifyOtp("mobile")
+                                                        verifyOtp()
                                                     }
                                                     className="h-11 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold text-sm"
                                                 >
@@ -1273,7 +1273,55 @@ export default function Login() {
 
                                                 <button
                                                     onClick={() =>
-                                                        sendOtp("mobile")
+                                                        sendOtp("mobilenumber", "whatsapp")
+                                                    }
+                                                    disabled={mobileTimer > 0}
+                                                    className="text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+                                                >
+                                                    {mobileTimer > 0
+                                                        ? `Resend OTP in ${mobileTimer}s`
+                                                        : "Resend OTP"}
+                                                </button>
+
+                                            </div>
+
+                                        </div>
+
+                                    )}
+
+                                    {/* WHATSAPP OTP */}
+                                    {whatsappVerified && (
+
+                                        <div className="mt-3 p-3 rounded-xl bg-indigo-50 border border-indigo-100">
+
+                                            <div className="flex flex-col sm:flex-row gap-2">
+
+                                                <input
+                                                    value={whatsappOtp}
+                                                    onChange={(e) =>
+                                                        setWhatsappOtp(e.target.value)
+                                                    }
+                                                    placeholder="Enter 6-digit OTP"
+                                                    className="flex-1 h-11 px-4 rounded-xl border border-indigo-200 bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none"
+                                                />
+
+                                                <button
+                                                    disabled={whatsappOtp.length < 6}
+                                                    onClick={() =>
+                                                        verifyOtp()
+                                                    }
+                                                    className="h-11 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold text-sm"
+                                                >
+                                                    Verify
+                                                </button>
+
+                                            </div>
+
+                                            <div className="flex justify-end mt-2">
+
+                                                <button
+                                                    onClick={() =>
+                                                        sendOtp("mobilenumber", "whatsapp")
                                                     }
                                                     disabled={mobileTimer > 0}
                                                     className="text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:text-gray-400 disabled:cursor-not-allowed"
