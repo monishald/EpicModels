@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import Navbar from "./Main";
 import { FaEye, FaEyeSlash, FaShieldAlt, FaLock, FaCheckCircle } from "react-icons/fa";
 import { useNavigate } from 'react-router-dom';
 

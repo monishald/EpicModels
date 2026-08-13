@@ -1,8 +1,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import Navbar from './Main'
-import { jwtDecode } from 'jwt-decode';
+// import { jwtDecode } from 'jwt-decode';
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { GoogleLogin } from "@react-oauth/google";
 
@@ -15,7 +14,6 @@ export default function Login() {
         firstname: "",
         lastname: "",
         mobilenumber: "",
-        whatsappnumber:"",
         email: "",
         password: "",
         confirmpassword: "",
@@ -34,8 +32,7 @@ export default function Login() {
         mobileOtp: ""
     });
     const api = process.env.REACT_APP_URL;
-    const [message, setMessage] = useState("");
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
 
     const [emailOtp, setEmailOtp] = useState("");
     const [mobileOtp, setMobileOtp] = useState("");
@@ -43,19 +40,19 @@ export default function Login() {
 
     const [emailTimer, setEmailTimer] = useState(0);
     const [mobileTimer, setMobileTimer] = useState(0);
-    const [whatsappTimer,setWhatsappTimer]= useState(0);
+    const [whatsappTimer, setWhatsappTimer] = useState(0);
 
     const [emailVerified, setEmailVerified] = useState(false);
     const [mobileVerified, setMobileVerified] = useState(false);
     const [whatsappVerified, setWhatsappVerified] = useState(false);
 
-    const [mobileOtpMethod, setMobileOtpMethod] = useState("");
+    // const [mobileOtpMethod, setMobileOtpMethod] = useState("");
     const [showMobileOtpOptions, setShowMobileOtpOptions] = useState(false);
 
     const [otpType, setOtpType] = useState(""); // "email" or "mobile"
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$/;
     const mobileRegex = /^[6-9][0-9]{9}$/;
-    
+
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -194,7 +191,7 @@ export default function Login() {
         if (!email && email === "") {
             setEmailVerified(false);
         }
-    }, [formData.mobilenumber, formData.email])
+    }, [formData])
 
     const handleSubmit = async () => {
         // e.preventDefault();
@@ -215,13 +212,13 @@ export default function Login() {
                 .then((res) => res.json())
                 .then((resData) => {
                     if (resData.success) {
-                        const decoded = jwtDecode(resData.token);
+                        // const decoded = jwtDecode(resData.token);
                         localStorage.setItem("token", resData.token);
-                        setMessage(resData.message);
+                        // setMessage(resData.message);
                     }
                     else {
                         console.log(resData.message)
-                        setMessage(resData.message);
+                        // setMessage(resData.message);(resData.message);
                     }
                 })
             alert("Login Successful");
@@ -283,17 +280,17 @@ export default function Login() {
                                 confirmpassword: "",
                                 countrycode: ""
                             })
-                            setMessage(resData.message);
+                            // setMessage(resData.message);(resData.message);
                             setIsLogin(false);
                             navigate("/login");
                         } else {
                             console.log(resData)
-                            setMessage(resData.message);
+                            // setMessage(resData.message);(resData.message);
                         }
                     })
                     .catch((err) => {
                         console.log("Error in registration:", err);
-                        setMessage("Trouble in connecting to server");
+                        // setMessage(resData.message);("Trouble in connecting to server");
 
                     });
                 // ✅ If all valid
@@ -340,11 +337,13 @@ export default function Login() {
     };
 
 
-    const sendOtp = async (type, method = "") => {
+    const sendOtp = async (type) => {
+        // let _type = type === "email" ? "email" : method;
 
         setOtpType(type);
+        console.log("type:", type)
 
-        let validate = false;
+        let validate = type;
 
         // ================= EMAIL =================
         if (type === "email") {
@@ -352,7 +351,7 @@ export default function Login() {
         }
 
         // ================= MOBILE =================
-        else if (type === "mobilenumber") {
+        else if (type === "sms") {
             validate = mobileRegex.test(formData.mobilenumber);
         }
 
@@ -378,20 +377,19 @@ export default function Login() {
                     email: formData.email,
                     type: "email"
                 }
-                : type === "mobilenumber"
+                : type === "sms"
                     ? {
                         mobilenumber: formData.mobilenumber,
-                        type: "mobilenumber"
+                        type: "sms"
                     }
                     : {
-                        whatsappnumber: formData.whatsappnumber,
+                        mobilenumber: formData.mobilenumber,
                         type: "whatsappnumber"
                     };
 
         console.log("Sending OTP:", payload);
 
         try {
-
             const res = await fetch(`${api}send-otp`, {
                 method: "POST",
                 headers: {
@@ -416,12 +414,12 @@ export default function Login() {
                 }
 
                 // ================= MOBILE =================
-                else if (type === "mobilenumber") {
+                else if (type === "sms") {
 
                     setMobileVerified(true);
                     setMobileTimer(30);
 
-                    setMobileOtpMethod(method);
+                    // setMobileOtpMethod(method);
                     setShowMobileOtpOptions(false);
 
                 }
@@ -429,12 +427,16 @@ export default function Login() {
                 // ================= WHATSAPP =================
                 else if (type === "whatsappnumber") {
 
-                    setMobileVerified(true);
+                    setWhatsappVerified(true);
                     setWhatsappTimer(30);
 
-                    setMobileOtpMethod("whatsapp");
+                    // setMobileOtpMethod("whatsapp");
                     setShowMobileOtpOptions(false);
 
+                }
+
+                else {
+                    alert(data.message || "Unable to send OTP");
                 }
 
             } else {
@@ -445,11 +447,11 @@ export default function Login() {
                     setEmailTimer(30);
 
                 }
-                else if (type === "mobilenumber") {
+                else if (type === "sms") {
 
                     setMobileVerified(true);
                     setMobileTimer(30);
-                    setMobileOtpMethod("mobile");
+                    // setMobileOtpMethod("mobile");
                     setShowMobileOtpOptions(false);
 
                 }
@@ -457,7 +459,7 @@ export default function Login() {
 
                     setWhatsappVerified(true);
                     setWhatsappTimer(30);
-                    setMobileOtpMethod("whatsapp");
+                    // setMobileOtpMethod("whatsapp");
                     setShowMobileOtpOptions(false);
 
                 }
@@ -519,6 +521,7 @@ export default function Login() {
     }, [emailTimer, mobileTimer, whatsappTimer]);
 
     const verifyOtp = async () => {
+        console.log("otpType:", otpType)
         try {
             let payload = {};
 
@@ -530,16 +533,16 @@ export default function Login() {
             }
 
             // ================= MOBILE =================
-            else if (otpType === "mobilenumber") {
+            else if (otpType === "sms") {
                 payload = {
                     mobilenumber: formData.mobilenumber
                 };
             }
 
             // ================= WHATSAPP =================
-            else if (otpType === "whatsappnumber") {
+            else if (otpType === "whatsapp") {
                 payload = {
-                    whatsappnumber: formData.whatsappnumber
+                    mobilenumber: formData.mobilenumber
                 };
             }
 
@@ -547,9 +550,12 @@ export default function Login() {
             const enteredOtp =
                 otpType === "email"
                     ? emailOtp
-                    : otpType === "mobilenumber"
+                    : otpType === "sms"
                         ? mobileOtp
                         : whatsappOtp;
+
+            console.log(enteredOtp, "email", emailOtp, "sms", mobileOtp, "whatsapp", whatsappOtp)
+            console.log("type:", otpType, payload)
 
             const res = await fetch(`${api}verify-otp`, {
                 method: "POST",
@@ -562,7 +568,9 @@ export default function Login() {
                     otp: enteredOtp,
                     type: otpType
                 }),
+
             });
+
 
             const data = await res.json();
 
@@ -571,19 +579,19 @@ export default function Login() {
                 alert(`${otpType} Verified ✅`);
 
                 // ================= EMAIL =================
-                if (otpType === "email") {
-                    setEmailVerified(true);
-                }
+                // if (otpType === "email") {
+                //     setEmailVerified(true);
+                // }
 
-                // ================= MOBILE =================
-                else if (otpType === "mobilenumber") {
-                    setMobileVerified(true);
-                }
+                // // ================= MOBILE =================
+                // else if (otpType === "sms") {
+                //     setMobileVerified(true);
+                // }
 
-                // ================= WHATSAPP =================
-                else if (otpType === "whatsappnumber") {
-                    setWhatsappVerified(true);
-                }
+                // // ================= WHATSAPP =================
+                // else if (otpType === "whatsappnumber") {
+                //     setWhatsappVerified(true);
+                // }
 
                 setOtpVerified(true);
 
@@ -823,8 +831,8 @@ export default function Login() {
                                 <button
                                     onClick={() => setIsLogin(true)}
                                     className={`px-6 sm:px-8 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${isLogin
-                                            ? "bg-indigo-600 text-white shadow-md"
-                                            : "text-gray-500 hover:text-gray-800"
+                                        ? "bg-indigo-600 text-white shadow-md"
+                                        : "text-gray-500 hover:text-gray-800"
                                         }`}
                                 >
                                     Login
@@ -833,8 +841,8 @@ export default function Login() {
                                 <button
                                     onClick={() => setIsLogin(false)}
                                     className={`px-6 sm:px-8 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${!isLogin
-                                            ? "bg-indigo-600 text-white shadow-md"
-                                            : "text-gray-500 hover:text-gray-800"
+                                        ? "bg-indigo-600 text-white shadow-md"
+                                        : "text-gray-500 hover:text-gray-800"
                                         }`}
                                 >
                                     Signup
@@ -946,62 +954,62 @@ export default function Login() {
                                 {/* First + Last Name */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                First Name
-                                            </label>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            First Name
+                                        </label>
 
-                                            <input
-                                                type="text"
-                                                name="firstname"
-                                                value={formData.firstname}
-                                                placeholder="First name"
-                                                onChange={handleChange}
-                                                className={`w-full h-11 px-4 rounded-xl border bg-gray-50 outline-none transition
+                                        <input
+                                            type="text"
+                                            name="firstname"
+                                            value={formData.firstname}
+                                            placeholder="First name"
+                                            onChange={handleChange}
+                                            className={`w-full h-11 px-4 rounded-xl border bg-gray-50 outline-none transition
                                                       ${errors.firstname
-                                                        ? "border-red-400 focus:ring-4 focus:ring-red-100"
-                                                        : formData.firstname
-                                                            ? "border-green-400 focus:ring-4 focus:ring-green-100"
-                                                            : "border-gray-200 focus:border-indigo-500"
-                                                    }`}
-                                            />
+                                                    ? "border-red-400 focus:ring-4 focus:ring-red-100"
+                                                    : formData.firstname
+                                                        ? "border-green-400 focus:ring-4 focus:ring-green-100"
+                                                        : "border-gray-200 focus:border-indigo-500"
+                                                }`}
+                                        />
 
-                                            <ValidationMessage
-                                                error={errors.firstname}
-                                                valid={
-                                                    formData.firstname !== "" &&
-                                                    errors.firstname === ""
-                                                }
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Last Name
-                                            </label>
+                                        <ValidationMessage
+                                            error={errors.firstname}
+                                            valid={
+                                                formData.firstname !== "" &&
+                                                errors.firstname === ""
+                                            }
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Last Name
+                                        </label>
 
-                                            <input
-                                                type="text"
-                                                name="lastname"
-                                                value={formData.lastname}
-                                                placeholder="Last name"
-                                                onChange={handleChange}
-                                                className={`w-full h-11 px-4 rounded-xl border bg-gray-50 outline-none transition
+                                        <input
+                                            type="text"
+                                            name="lastname"
+                                            value={formData.lastname}
+                                            placeholder="Last name"
+                                            onChange={handleChange}
+                                            className={`w-full h-11 px-4 rounded-xl border bg-gray-50 outline-none transition
                                                        ${errors.lastname
-                                                        ? "border-red-400 focus:ring-4 focus:ring-red-100"
-                                                        : formData.lastname
-                                                            ? "border-green-400 focus:ring-4 focus:ring-green-100"
-                                                            : "border-gray-200 focus:border-indigo-500"
-                                                    }`}
-                                            />
+                                                    ? "border-red-400 focus:ring-4 focus:ring-red-100"
+                                                    : formData.lastname
+                                                        ? "border-green-400 focus:ring-4 focus:ring-green-100"
+                                                        : "border-gray-200 focus:border-indigo-500"
+                                                }`}
+                                        />
 
-                                            <ValidationMessage
-                                                error={errors.lastname}
-                                                valid={
-                                                    formData.lastname !== "" &&
-                                                    errors.lastname === ""
-                                                }
-                                            />
-                                        </div>
+                                        <ValidationMessage
+                                            error={errors.lastname}
+                                            valid={
+                                                formData.lastname !== "" &&
+                                                errors.lastname === ""
+                                            }
+                                        />
+                                    </div>
                                 </div>
 
 
@@ -1020,28 +1028,28 @@ export default function Login() {
                                                 ✉
                                             </span>
 
-                                                <input
-                                                    type="email"
-                                                    name="email"
-                                                    value={formData.email}
-                                                    placeholder="Enter your email"
-                                                    onChange={handleChange}
-                                                    className={`w-full h-11 pl-11 pr-4 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                value={formData.email}
+                                                placeholder="Enter your email"
+                                                onChange={handleChange}
+                                                className={`w-full h-11 pl-11 pr-4 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition
                                                           ${errors.email
-                                                            ? "border-red-400"
-                                                            : formData.email
-                                                                ? "border-green-400"
-                                                                : "border-gray-200"
-                                                        }`}
-                                                />
+                                                        ? "border-red-400"
+                                                        : formData.email
+                                                            ? "border-green-400"
+                                                            : "border-gray-200"
+                                                    }`}
+                                            />
 
-                                                <ValidationMessage
-                                                    error={errors.email}
-                                                    valid={
-                                                        formData.email !== "" &&
-                                                        errors.email === ""
-                                                    }
-                                                />
+                                            <ValidationMessage
+                                                error={errors.email}
+                                                valid={
+                                                    formData.email !== "" &&
+                                                    errors.email === ""
+                                                }
+                                            />
 
                                         </div>
 
@@ -1065,7 +1073,6 @@ export default function Login() {
                                         <div className="mt-3 p-3 rounded-xl bg-indigo-50 border border-indigo-100">
 
                                             <div className="flex flex-col sm:flex-row gap-2">
-
                                                 <input
                                                     value={emailOtp}
                                                     onChange={(e) =>
@@ -1078,7 +1085,7 @@ export default function Login() {
                                                 <button
                                                     disabled={emailOtp.length < 6}
                                                     onClick={() =>
-                                                        verifyOtp("email")
+                                                        verifyOtp()
                                                     }
                                                     className="h-11 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold text-sm"
                                                 >
@@ -1157,22 +1164,22 @@ export default function Login() {
                                                     }
 
                                                 }}
-                                                    className={`w-full h-11 pl-11 pr-4 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition
+                                                className={`w-full h-11 pl-11 pr-4 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition
                                                      ${errors.mobilenumber
-                                                            ? "border-red-400"
-                                                            : formData.mobilenumber
-                                                                ? "border-green-400"
-                                                                : "border-gray-200"
-                                                        }`}
-                                             />
+                                                        ? "border-red-400"
+                                                        : formData.mobilenumber
+                                                            ? "border-green-400"
+                                                            : "border-gray-200"
+                                                    }`}
+                                            />
 
-                                                <ValidationMessage
-                                                     error={errors.mobilenumber}
-                                                     valid={
-                                                      formData.mobilenumber.length === 10 &&
-                                                      errors.mobilenumber === ""
-                                                    }
-                                                 />
+                                            <ValidationMessage
+                                                error={errors.mobilenumber}
+                                                valid={
+                                                    formData.mobilenumber.length === 10 &&
+                                                    errors.mobilenumber === ""
+                                                }
+                                            />
 
                                         </div>
 
@@ -1188,57 +1195,62 @@ export default function Login() {
                                                     formData.mobilenumber
                                                 )
                                             }
-                                            onClick={() =>
-                                                sendOtp("mobilenumber")
-                                            }
+                                            onClick={() => setShowMobileOtpOptions(true)}
                                             className="h-11 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-semibold text-sm transition"
                                         >
                                             Send OTP
                                         </button>
 
                                     </div>
-                                        {/* ================= SMS / WHATSAPP OPTIONS ================= */}
+                                    {/* ================= SMS / WHATSAPP OPTIONS ================= */}
 
-                                        {showMobileOtpOptions && (
+                                    {showMobileOtpOptions && (
 
-                                            <div className="mt-3 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                                        <div className="mt-3 p-4 bg-gray-50 border border-gray-200 rounded-xl">
 
-                                                <p className="text-sm font-semibold text-gray-700 mb-3">
-                                                    Where do you want to receive the OTP?
-                                                </p>
+                                            <p className="text-sm font-semibold text-gray-700 mb-3">
+                                                Where do you want to receive the OTP?
+                                            </p>
 
-                                                <div className="flex gap-3">
+                                            <div className="flex gap-3">
 
-                                                    {/* SMS */}
+                                                {/* SMS */}
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            sendOtp("mobilenumber", "sms")
-                                                        }
-                                                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2.5 rounded-lg font-medium transition"
-                                                    >
-                                                        📱 SMS
-                                                    </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        sendOtp("sms")
+                                                        setMobileVerified(true)
+                                                        setWhatsappVerified(false)
+                                                    }
+
+                                                    }
+                                                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2.5 rounded-lg font-medium transition"
+                                                >
+                                                    📱 SMS
+                                                </button>
 
 
-                                                    {/* WHATSAPP */}
+                                                {/* WHATSAPP */}
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            sendOtp("mobilenumber", "whatsapp")
-                                                        }
-                                                        className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2.5 rounded-lg font-medium transition"
-                                                    >
-                                                        💬 WhatsApp
-                                                    </button>
-
-                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        sendOtp("whatsapp")
+                                                        setWhatsappVerified(true)
+                                                        setMobileVerified(false)
+                                                    }
+                                                    }
+                                                    className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2.5 rounded-lg font-medium transition"
+                                                >
+                                                    💬 WhatsApp
+                                                </button>
 
                                             </div>
 
-                                        )}
+                                        </div>
+
+                                    )}
 
 
                                     {/* MOBILE OTP */}
@@ -1260,7 +1272,7 @@ export default function Login() {
                                                 <button
                                                     disabled={mobileOtp.length < 6}
                                                     onClick={() =>
-                                                        verifyOtp("mobile")
+                                                        verifyOtp()
                                                     }
                                                     className="h-11 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold text-sm"
                                                 >
@@ -1273,7 +1285,67 @@ export default function Login() {
 
                                                 <button
                                                     onClick={() =>
-                                                        sendOtp("mobile")
+                                                        sendOtp("sms")
+                                                    }
+                                                    disabled={mobileTimer > 0}
+                                                    className="text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+                                                >
+                                                    {mobileTimer > 0
+                                                        ? `Resend OTP in ${mobileTimer}s`
+                                                        : "Resend OTP"}
+                                                </button>
+
+                                                {/* <button
+                                                    onClick={() =>
+                                                        sendOtp("whatsappnumber")
+                                                    }
+                                                    disabled={whatsappTimer > 0}
+                                                    className="text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+                                                >
+                                                    {whatsappTimer > 0
+                                                        ? `Resend OTP in ${whatsappTimer}s`
+                                                        : "Resend OTP"}
+                                                </button> */}
+
+                                            </div>
+
+                                        </div>
+
+                                    )}
+
+                                    {/* WHATSAPP OTP */}
+                                    {whatsappVerified && (
+
+                                        <div className="mt-3 p-3 rounded-xl bg-indigo-50 border border-indigo-100">
+
+                                            <div className="flex flex-col sm:flex-row gap-2">
+
+                                                <input
+                                                    value={whatsappOtp}
+                                                    onChange={(e) =>
+                                                        setWhatsappOtp(e.target.value)
+                                                    }
+                                                    placeholder="Enter 6-digit OTP"
+                                                    className="flex-1 h-11 px-4 rounded-xl border border-indigo-200 bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none"
+                                                />
+
+                                                <button
+                                                    disabled={whatsappOtp.length < 6}
+                                                    onClick={() =>
+                                                        verifyOtp()
+                                                    }
+                                                    className="h-11 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold text-sm"
+                                                >
+                                                    Verify
+                                                </button>
+
+                                            </div>
+
+                                            <div className="flex justify-end mt-2">
+
+                                                <button
+                                                    onClick={() =>
+                                                        sendOtp("whatsapp")
                                                     }
                                                     disabled={mobileTimer > 0}
                                                     className="text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:text-gray-400 disabled:cursor-not-allowed"
@@ -1345,25 +1417,25 @@ export default function Login() {
 
                                                 <span
                                                     className={`w-8 h-1 rounded-full ${strength === "Weak"
-                                                            ? "bg-red-500"
-                                                            : strength === "Medium"
-                                                                ? "bg-yellow-500"
-                                                                : "bg-green-500"
+                                                        ? "bg-red-500"
+                                                        : strength === "Medium"
+                                                            ? "bg-yellow-500"
+                                                            : "bg-green-500"
                                                         }`}
                                                 />
 
                                                 <span
                                                     className={`w-8 h-1 rounded-full ${strength === "Medium" ||
-                                                            strength === "Strong"
-                                                            ? "bg-yellow-500"
-                                                            : "bg-gray-200"
+                                                        strength === "Strong"
+                                                        ? "bg-yellow-500"
+                                                        : "bg-gray-200"
                                                         }`}
                                                 />
 
                                                 <span
                                                     className={`w-8 h-1 rounded-full ${strength === "Strong"
-                                                            ? "bg-green-500"
-                                                            : "bg-gray-200"
+                                                        ? "bg-green-500"
+                                                        : "bg-gray-200"
                                                         }`}
                                                 />
 
@@ -1371,10 +1443,10 @@ export default function Login() {
 
                                             <span
                                                 className={`text-xs font-medium ${strength === "Weak"
-                                                        ? "text-red-500"
-                                                        : strength === "Medium"
-                                                            ? "text-yellow-600"
-                                                            : "text-green-600"
+                                                    ? "text-red-500"
+                                                    : strength === "Medium"
+                                                        ? "text-yellow-600"
+                                                        : "text-green-600"
                                                     }`}
                                             >
                                                 {strength}
@@ -1425,22 +1497,22 @@ export default function Login() {
                                         name="countrycode"
                                         placeholder="Example: +91"
                                         onChange={handleChange}
-                                            className={`w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition
+                                        className={`w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition
                                                 ${errors.countrycode
-                                                    ? "border-red-400"
-                                                    : formData.countrycode
-                                                        ? "border-green-400"
-                                                        : "border-gray-200"
-                                                }`}
-                                        />
+                                                ? "border-red-400"
+                                                : formData.countrycode
+                                                    ? "border-green-400"
+                                                    : "border-gray-200"
+                                            }`}
+                                    />
 
-                                        <ValidationMessage
-                                            error={errors.countrycode}
-                                            valid={
-                                                formData.countrycode !== "" &&
-                                                errors.countrycode === ""
-                                            }
-                                        />
+                                    <ValidationMessage
+                                        error={errors.countrycode}
+                                        valid={
+                                            formData.countrycode !== "" &&
+                                            errors.countrycode === ""
+                                        }
+                                    />
 
                                 </div>
 
@@ -1516,5 +1588,5 @@ export default function Login() {
             </div>
 
         </div>
-    )}
-
+    )
+}
