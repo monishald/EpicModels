@@ -8,7 +8,9 @@ import { GoogleLogin } from "@react-oauth/google";
 export default function Login() {
     const [isLogin, setIsLogin] = useState(true); // toggle between Login & Register
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [strength, setStrength] = useState("");
+    // const [message,setMessage] = useState("");
     const [otpVerified, setOtpVerified] = useState(false);
     const [formData, setFormData] = useState({
         firstname: "",
@@ -17,14 +19,13 @@ export default function Login() {
         email: "",
         password: "",
         confirmpassword: "",
-        countrycode: ""
+        countrycode: "+"
     });
     const [errors, setErrors] = useState({
         firstname: "",
         lastname: "",
         email: "",
         mobilenumber: "",
-        whatsappnumber: "",
         password: "",
         confirmpassword: "",
         countrycode: "",
@@ -46,10 +47,13 @@ export default function Login() {
     const [mobileVerified, setMobileVerified] = useState(false);
     const [whatsappVerified, setWhatsappVerified] = useState(false);
 
-    // const [mobileOtpMethod, setMobileOtpMethod] = useState("");
-    const [showMobileOtpOptions, setShowMobileOtpOptions] = useState(false);
+    const [emailOtpSent, setEmailOtpSent] = useState(false);
+    const [mobileOtpSent, setMobileOtpSent] = useState(false);
+    const [whatsappOtpSent, setWhatsappOtpSent] = useState(false);
 
+    const [showMobileOtpOptions, setShowMobileOtpOptions] = useState(false);
     const [otpType, setOtpType] = useState(""); // "email" or "mobile"
+
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$/;
     const mobileRegex = /^[6-9][0-9]{9}$/;
 
@@ -95,17 +99,36 @@ export default function Login() {
 
 
         // ================= EMAIL =================
+
         if (name === "email") {
 
-            if (value.trim() === "") {
+            const email = value.trim().toLowerCase();
+
+            if (email === "") {
                 error = "Email is required";
             }
-            else if (!emailRegex.test(value)) {
+            else if (!emailRegex.test(email)) {
                 error = "Enter a valid email address";
             }
+            else {
+                const domain = email.split("@")[1];
+
+                const invalidEmailDomains = [
+                    "gmial.com",
+                    "gmai.com",
+                    "gamil.com",
+                    "gmali.com",
+                    "yaho.com",
+                    "yahooo.com",
+                    "outlok.com",
+                    "hotmai.com"
+                ];
+
+                if (invalidEmailDomains.includes(domain)) {
+                    error = "Please check your email domain";
+                }
+            }
         }
-
-
         // ================= MOBILE =================
         if (name === "mobilenumber") {
 
@@ -168,14 +191,13 @@ export default function Login() {
         // ================= COUNTRY CODE =================
         if (name === "countrycode") {
 
-            if (value === "") {
+            if (value === ""||value === "+") {
                 error = "Country code is required";
             }
             else if (!/^\+\d{1,4}$/.test(value)) {
                 error = "Example: +91";
             }
         }
-
 
         setErrors((prev) => ({
             ...prev,
@@ -185,6 +207,7 @@ export default function Login() {
 
     useEffect(() => {
         const { mobilenumber, email } = formData;
+
         if (!mobilenumber && mobilenumber === "") {
             setMobileVerified(false);
         }
@@ -193,10 +216,59 @@ export default function Login() {
         }
     }, [formData])
 
+   
     const handleSubmit = async () => {
-        // e.preventDefault();
         if (isLogin) {
+
+            // ================= EMAIL =================
+
+            if (formData.email.trim() === "") {
+
+                setErrors(prev => ({
+                    ...prev,
+                    email: "Please enter your email"
+                }));
+
+                return;
+            }
+
+            if (!emailRegex.test(formData.email)) {
+
+                setErrors(prev => ({
+                    ...prev,
+                    email: "Please enter a valid email address"
+                }));
+
+                return;
+            }
+
+            // Clear email error
+            setErrors(prev => ({
+                ...prev,
+                email: ""
+            }));
+
+
+            // ================= PASSWORD =================
+
+            if (formData.password.trim() === "") {
+                console.log("password:", formData.password.trim())
+                setErrors(prev => ({
+                    ...prev,
+                    password: "Please enter your password"
+                }));
+
+                return;
+            }
+
+            // Clear password error
+            setErrors(prev => ({
+                ...prev,
+                password: ""
+            }));
+
             console.log(formData)
+            try{
             fetch(`${api}login`, {
                 method: "POST",
                 credentials: "include",
@@ -215,32 +287,91 @@ export default function Login() {
                         // const decoded = jwtDecode(resData.token);
                         localStorage.setItem("token", resData.token);
                         // setMessage(resData.message);
+                        alert("Login Successful");
+                        navigate("/")
                     }
                     else {
                         console.log(resData.message)
                         // setMessage(resData.message);(resData.message);
+                        alert( "Invalid email or password");
                     }
                 })
-            alert("Login Successful");
-            navigate("/")
+           
+            } catch (error) {
+
+                console.error("Login Error:", error);
+
+                alert("Unable to connect to server");
+            }
+
         } else {
-            // Mobile validation
-            if (!/^[6-9][0-9]{9}$/.test(formData.mobilenumber)) {
-                alert("Invalid mobile number");
+            const requiredFields = [
+                "firstname",
+                "lastname",
+                "email",
+                "mobilenumber",
+                "password",
+                "confirmpassword",
+                "countrycode"
+            ];
+
+            let hasError = false;
+
+            requiredFields.forEach((field) => {
+
+                if (formData[field].trim() === "" ||
+                    (field === "countrycode" && !/^\+\d{1,4}$/.test(formData[field]))
+                ) {
+
+                    hasError = true;
+
+                    setErrors((prev) => ({
+                        ...prev,
+                        [field]:
+                            field === "firstname"
+                                ? "First name is required"
+                                : field === "lastname"
+                                    ? "Last name is required"
+                                    : field === "email"
+                                        ? "Email is required"
+                                        : field === "mobilenumber"
+                                            ? "Mobile number is required"
+                                            : field ==="countrycode"
+                                                ? "Country code is required"
+                                            : field === "password"
+                                                ? "Password is required"
+                                                : field === "confirmpassword"
+                                                    ? "Confirmpassword is required"
+                                                    : ""
+                                                    
+                    }));
+
+                }
+            });
+
+            // =========================================
+            // CHECK EXISTING VALIDATION ERRORS
+            // =========================================
+
+            const hasExistingErrors = Object.values(errors).some(
+                (error) => error !== ""
+            );
+
+            if (hasError || hasExistingErrors) {
                 return;
             }
-            // Password validation
-            const passwordRegex =
-                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+=-])[A-Za-z\d@$!%*?&#^()_+=-]{8,20}$/;
 
-            if (!passwordRegex.test(formData.password)) {
-                alert("Password must be 8-20 characters and include uppercase, lowercase, number, and special character");
-                return;
-            }
+            // =========================================
+            // PASSWORD MATCH
+            // =========================================
 
-            // Confirm password
             if (formData.password !== formData.confirmpassword) {
-                alert("Passwords does not match");
+
+                setErrors((prev) => ({
+                    ...prev,
+                    confirmpassword: "Passwords do not match"
+                }));
+
                 return;
             }
             if (!isLogin) {
@@ -248,7 +379,8 @@ export default function Login() {
                     alert("Please verify OTP first");
                     return;
                 }
-                fetch(`${api}register`, {
+            try{
+                fetch(`${api}register`, {                    
                     method: "POST",
                     credentials: "include",
                     headers: {
@@ -264,6 +396,7 @@ export default function Login() {
                         countrycode: formData.countrycode
 
                     }),
+                  
                 })
 
                     .then((res) => res.json())
@@ -282,22 +415,25 @@ export default function Login() {
                             })
                             // setMessage(resData.message);(resData.message);
                             setIsLogin(false);
+                            // ✅ If all valid
+                            alert("Registration Successful");
                             navigate("/login");
                         } else {
                             console.log(resData)
                             // setMessage(resData.message);(resData.message);
                         }
                     })
-                    .catch((err) => {
-                        console.log("Error in registration:", err);
-                        // setMessage(resData.message);("Trouble in connecting to server");
+                
+            }catch (error) {
 
-                    });
-                // ✅ If all valid
-                alert("Registration Successful");
+                console.error("Login Error:", error);
+
+                alert("Unable to connect to server");
             }
         }
+        
     }
+}
 
     const ValidationMessage = ({ error, valid }) => {
 
@@ -394,7 +530,7 @@ export default function Login() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Accept": "application/json",
+                    "Accept": "application/json", 
                 },
                 body: JSON.stringify(payload),
             });
@@ -408,7 +544,9 @@ export default function Login() {
                 // ================= EMAIL =================
                 if (type === "email") {
 
-                    setEmailVerified(true);
+                    setEmailOtp("");
+                    setEmailOtpSent(true);
+                    setEmailVerified(false);
                     setEmailTimer(30);
 
                 }
@@ -416,10 +554,11 @@ export default function Login() {
                 // ================= MOBILE =================
                 else if (type === "sms") {
 
-                    setMobileVerified(true);
+                    setMobileOtp("");
+                    setMobileOtpSent(true);
+                    setMobileVerified(false);
                     setMobileTimer(30);
 
-                    // setMobileOtpMethod(method);
                     setShowMobileOtpOptions(false);
 
                 }
@@ -427,10 +566,11 @@ export default function Login() {
                 // ================= WHATSAPP =================
                 else if (type === "whatsappnumber") {
 
-                    setWhatsappVerified(true);
+                    setWhatsappOtp("");
+                    setWhatsappOtpSent(true);
+                    setWhatsappVerified(false);
                     setWhatsappTimer(30);
 
-                    // setMobileOtpMethod("whatsapp");
                     setShowMobileOtpOptions(false);
 
                 }
@@ -571,27 +711,45 @@ export default function Login() {
 
             });
 
-
             const data = await res.json();
 
             if (data.success) {
 
-                alert(`${otpType} Verified ✅`);
-
                 // ================= EMAIL =================
-                // if (otpType === "email") {
-                //     setEmailVerified(true);
-                // }
 
-                // // ================= MOBILE =================
-                // else if (otpType === "sms") {
-                //     setMobileVerified(true);
-                // }
+                if (otpType === "email") {
 
-                // // ================= WHATSAPP =================
-                // else if (otpType === "whatsappnumber") {
-                //     setWhatsappVerified(true);
-                // }
+                    setEmailVerified(true);
+                    setEmailOtpSent(false);
+                    setEmailOtp("");
+                    setEmailTimer(0);
+
+                    alert("Email Verified ✅");
+                }
+
+                // ================= SMS =================
+
+                else if (otpType === "sms") {
+
+                    setMobileVerified(true);
+                    setMobileOtpSent(false);
+                    setMobileOtp("");
+                    setMobileTimer(0);
+
+                    alert("SMS Verified ✅");
+                }
+
+                // ================= WHATSAPP =================
+
+                else if (otpType === "whatsapp") {
+
+                    setWhatsappVerified(true);
+                    setWhatsappOtpSent(false);
+                    setWhatsappOtp("");
+                    setWhatsappTimer(0);
+
+                    alert("WhatsApp Verified ✅");
+                }
 
                 setOtpVerified(true);
 
@@ -869,7 +1027,7 @@ export default function Login() {
 
                                     <div className="relative">
 
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                        <span className="absolute left-4 top-6 -translate-y-1/2 text-gray-400">
                                             ✉
                                         </span>
 
@@ -915,14 +1073,32 @@ export default function Login() {
                                         </span>
 
                                         <input
-                                            type="password"
+                                            type={showPassword ? "text" : "password"}
                                             name="password"
                                             value={formData.password}
                                             onChange={handleChange}
                                             placeholder="Enter your password"
                                             className="w-full h-12 pl-11 pr-4 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition"
                                         />
-
+                                        <span
+                                            onClick={() =>
+                                                setShowPassword(!showPassword)
+                                            }
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-indigo-600"
+                                        >
+                                            {showPassword ? (
+                                                <FaEyeSlash />
+                                            ) : (
+                                                <FaEye />
+                                            )}
+                                        </span>
+                                        <ValidationMessage
+                                            error={errors.password}
+                                            valid={
+                                                formData.password !== "" &&
+                                                errors.password === ""
+                                            }
+                                        />
                                     </div>
 
                                 </div>
@@ -956,7 +1132,7 @@ export default function Login() {
 
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                            First Name
+                                            First Name  
                                         </label>
 
                                         <input
@@ -1024,7 +1200,7 @@ export default function Login() {
 
                                         <div className="relative flex-1">
 
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                            <span className="absolute left-4 top-6 -translate-y-1/2 text-gray-400">
                                                 ✉
                                             </span>
 
@@ -1068,7 +1244,7 @@ export default function Login() {
 
 
                                     {/* EMAIL OTP */}
-                                    {emailVerified && (
+                                        {!emailVerified && emailOtpSent && (
 
                                         <div className="mt-3 p-3 rounded-xl bg-indigo-50 border border-indigo-100">
 
@@ -1120,67 +1296,112 @@ export default function Login() {
                                 {/* ================= MOBILE ================= */}
                                 <div>
 
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Mobile Number
-                                    </label>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Mobile Number
+                                        </label>
 
-                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        {/* INPUTS + SEND OTP */}
+                                        <div className="flex flex-col sm:flex-row gap-2">
 
-                                        <div className="relative flex-1">
+                                            {/* Country Code + Mobile Number */}
+                                            <div className="flex">
 
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                                                📱
-                                            </span>
+                                                <div className="flex">
 
-                                            <input
-                                                name="mobilenumber"
-                                                placeholder="10-digit mobile number"
-                                                maxLength={10}
-                                                value={formData.mobilenumber}
-                                                onChange={(e) => {
-                                                    if (/^\d*$/.test(e.target.value)) {
+                                                    {/* ================= COUNTRY CODE ================= */}
+                                                    <div className="w-[110px] flex-shrink-0">
 
-                                                        setFormData({
-                                                            ...formData,
-                                                            mobilenumber: e.target.value
-                                                        });
+                                                        <div
+                                                            className={`flex items-center h-11 border bg-gray-50 rounded-l-xl
+                                                                   ${errors.countrycode
+                                                                    ? "border-red-400"
+                                                                    : formData.countrycode
+                                                                        ? "border-green-400"
+                                                                        : "border-gray-200"
+                                                                }`}
+                                                        >
 
-                                                        let error = "";
+                                                            <span className="px-2 text-base">
+                                                                🌐
+                                                            </span>
 
-                                                        if (e.target.value === "") {
-                                                            error = "Mobile number is required";
-                                                        }
-                                                        else if (e.target.value.length < 10) {
-                                                            error = "Mobile number must be 10 digits";
-                                                        }
-                                                        else if (!mobileRegex.test(e.target.value)) {
-                                                            error = "Mobile number must start with 6, 7, 8 or 9";
-                                                        }
+                                                            <input
+                                                                type="text"
+                                                                name="countrycode"
+                                                                value={formData.countrycode}
+                                                                maxLength={5}
+                                                                placeholder="+91"
+                                                                onChange={(e) => {
+                                                                    let value = e.target.value;
 
-                                                        setErrors((prev) => ({
-                                                            ...prev,
-                                                            mobilenumber: error
-                                                        }));
-                                                    }
+                                                                    // Allow only + and numbers
+                                                                    value = value.replace(/[^\d+]/g, "");
 
-                                                }}
-                                                className={`w-full h-11 pl-11 pr-4 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition
-                                                     ${errors.mobilenumber
-                                                        ? "border-red-400"
-                                                        : formData.mobilenumber
-                                                            ? "border-green-400"
-                                                            : "border-gray-200"
-                                                    }`}
-                                            />
+                                                                    // + must be at the beginning
+                                                                    if (value.includes("+")) {
+                                                                        value = "+" + value.replace(/\+/g, "");
+                                                                    }
 
-                                            <ValidationMessage
-                                                error={errors.mobilenumber}
-                                                valid={
-                                                    formData.mobilenumber.length === 10 &&
-                                                    errors.mobilenumber === ""
-                                                }
-                                            />
+                                                                    // Maximum 4 digits after +
+                                                                    value = value.slice(0, 5);
 
+                                                                    handleChange({
+                                                                        target: {
+                                                                            name: "countrycode",
+                                                                            value: value
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                className="w-full h-11 bg-transparent outline-none text-sm font-medium text-gray-700"
+                                                            />
+
+                                                        </div>
+
+                                                        {/* COUNTRY CODE VALIDATION - BELOW COUNTRY CODE */}
+                                                        <ValidationMessage
+                                                            error={errors.countrycode}
+                                                            valid={
+                                                                formData.countrycode !== "" &&
+                                                                /^\+\d{1,4}$/.test(formData.countrycode) &&
+                                                                errors.countrycode === ""
+                                                            }
+                                                        />
+
+                                                    </div>
+
+                                                </div>
+
+                                            </div>
+
+
+                                                    {/* ================= MOBILE NUMBER ================= */}
+                                                    <div className="flex-1">
+
+                                                        <input
+                                                            type="text"
+                                                            name="mobilenumber"
+                                                            placeholder="10-digit mobile number"
+                                                            maxLength={10}
+                                                            value={formData.mobilenumber}
+                                                            onChange={handleChange}
+                                                            className={`w-full h-11 px-4 rounded-r-xl border bg-gray-50 focus:bg-white focus:border-indigo-50 focus:ring-4 focus:ring-indigo-100 outline-none transition
+                                                                   ${errors.mobilenumber
+                                                                    ? "border-red-400"
+                                                                    : formData.mobilenumber
+                                                                        ? "border-green-400"
+                                                                        : "border-gray-200"
+                                                                }`}
+                                                        />
+
+                                                        {/* MOBILE VALIDATION - BELOW MOBILE NUMBER */}
+                                                        <ValidationMessage
+                                                            error={errors.mobilenumber}
+                                                            valid={
+                                                                formData.mobilenumber.length === 10 &&
+                                                                mobileRegex.test(formData.mobilenumber) &&
+                                                                errors.mobilenumber === ""
+                                                            }
+                                                        />
                                         </div>
 
                                         <button
@@ -1254,7 +1475,7 @@ export default function Login() {
 
 
                                     {/* MOBILE OTP */}
-                                    {mobileVerified && (
+                                    {!mobileVerified && mobileOtpSent && (
 
                                         <div className="mt-3 p-3 rounded-xl bg-indigo-50 border border-indigo-100">
 
@@ -1314,7 +1535,7 @@ export default function Login() {
                                     )}
 
                                     {/* WHATSAPP OTP */}
-                                    {whatsappVerified && (
+                                    {!whatsappVerified && whatsappOtpSent && (
 
                                         <div className="mt-3 p-3 rounded-xl bg-indigo-50 border border-indigo-100">
 
@@ -1373,13 +1594,14 @@ export default function Login() {
 
                                     <div className="relative">
 
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                        <span className="absolute left-4 top-6 -translate-y-1/2 text-gray-400">
                                             🔒
                                         </span>
 
                                         <input
                                             type={showPassword ? "text" : "password"}
                                             name="password"
+                                            value={formData.password}
                                             placeholder="Create password"
                                             onChange={(e) => {
                                                 handleChange(e);
@@ -1404,7 +1626,13 @@ export default function Login() {
                                                 <FaEye />
                                             )}
                                         </span>
-
+                                            <ValidationMessage
+                                                error={errors.password}
+                                                valid={
+                                                    formData.password !== "" &&
+                                                    errors.password === ""
+                                                }
+                                            />
                                     </div>
 
 
@@ -1468,24 +1696,60 @@ export default function Login() {
 
                                     <div className="relative">
 
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                        <span className="absolute left-4 top-6 -translate-y-1/2 text-gray-400">
                                             🔒
                                         </span>
 
                                         <input
-                                            type="password"
+                                            type={showConfirmPassword ? "text" : "password"}
                                             name="confirmpassword"
+                                             value={formData.confirmpassword}
                                             placeholder="Confirm password"
                                             onChange={handleChange}
                                             className="w-full h-11 pl-11 pr-4 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition"
                                         />
-
+                                            {/* Eye Icon */}
+                                            <span
+                                                onClick={() =>
+                                                    setShowConfirmPassword(!showConfirmPassword)
+                                                }
+                                                className="absolute right-4 top-6 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-indigo-600"
+                                            >
+                                                {showConfirmPassword ? (
+                                                    <FaEyeSlash />
+                                                ) : (
+                                                    <FaEye />
+                                                )}
+                                            </span>
+                                            <ValidationMessage
+                                                error={errors.confirmpassword}
+                                                valid={
+                                                    formData.confirmpassword !== "" &&
+                                                    errors.confirmpassword === ""
+                                                }
+                                            />
+                                          {/* Match message */}
+                                        {formData.confirmpassword && (
+                                            <p
+                                                className={`text-xs mt-2 font-medium
+                                                ${formData.password === formData.confirmpassword
+                                                        ? "text-green-600"
+                                                        : "text-red-500"
+                                                    }`}
+                                            >
+                                                {formData.password ===
+                                                    formData.confirmpassword
+                                                    ? "✓ Passwords match"
+                                                    : "Passwords do not match"}
+                                            </p>
+                                        )}
+                                           
                                     </div>
 
                                 </div>
 
 
-                                {/* Country Code */}
+                                {/* Country Code
                                 <div>
 
                                     <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1514,7 +1778,7 @@ export default function Login() {
                                         }
                                     />
 
-                                </div>
+                                </div> */}
 
                             </div>
                         )}
@@ -1568,7 +1832,19 @@ export default function Login() {
 
                             </>
                         )}
+                        {/* ================= MESSAGE =================
 
+                        {message && (
+                            <div
+                                className={`mt-5 p-3 rounded-xl text-center text-sm font-medium
+                                    ${message.includes("successful")
+                                        ? "bg-green-50 text-green-600 border border-green-200"
+                                        : "bg-red-50 text-red-500 border border-red-200"
+                                    }`}
+                            >
+                                {message}
+                            </div>
+                        )} */}
 
                         {/* Bottom security message */}
                         <div className="flex justify-center items-center gap-2 mt-6 text-xs text-gray-400">

@@ -12,6 +12,7 @@ export default function Password() {
     });
     const navigate = useNavigate()
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [strength, setStrength] = useState("");
     const [otp, setOtp] = useState("");
     const [timer, setTimer] = useState(0);
@@ -20,16 +21,16 @@ export default function Password() {
     const [message, setMessage] = useState("");
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$/;
     const [errors, setErrors] = useState({
-            firstname: "",
-            lastname: "",
-            email: "",
-            mobilenumber: "",
-            password: "",
-            confirmpassword: "",
-            countrycode: "",
-            emailOtp: "",
-            mobileOtp: ""
-        })
+        firstname: "",
+        lastname: "",
+        email: "",
+        mobilenumber: "",
+        password: "",
+        confirmpassword: "",
+        countrycode: "",
+        emailOtp: "",
+        mobileOtp: ""
+    })
     const ValidationMessage = ({ error, valid }) => {
 
         if (error) {
@@ -150,9 +151,9 @@ export default function Password() {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                 email: formData.email,
+                email: formData.email,
                 type: "email"
-             })
+            })
         });
 
         const data = await res.json();
@@ -176,7 +177,7 @@ export default function Password() {
 
         return () => clearInterval(interval);
     }, [timer]);
-
+    console.log(formData.email)
     // ✅ Verify OTP
     const verifyOtp = async () => {
         const res = await fetch(`${api}verify-otp`, {
@@ -186,7 +187,8 @@ export default function Password() {
             },
             body: JSON.stringify({
                 email: formData.email,
-                otp
+                otp,
+                type: 'email'
             })
         });
 
@@ -217,7 +219,7 @@ export default function Password() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Accept" : "application/json"
+                "Accept": "application/json"
             },
             body: JSON.stringify({
                 email: formData.email,
@@ -228,9 +230,9 @@ export default function Password() {
         const data = await res.json();
 
         if (data.success) {
-            setMessage("Password reset successful ✅");
+            alert("Password reset successful ✅");
         } else {
-            setMessage("Something went wrong");
+            alert("Something went wrong");
         }
     };
 
@@ -432,13 +434,13 @@ export default function Password() {
                                                     : "border-gray-200"
                                             }`}
                                     />
-                                      <ValidationMessage
-                                            error={errors.email}
-                                            valid={
-                                                formData.email !== "" &&
-                                                errors.email === ""
-                                            }
-                                        />
+                                    <ValidationMessage
+                                        error={errors.email}
+                                        valid={
+                                            formData.email !== "" &&
+                                            errors.email === ""
+                                        }
+                                    />
 
                                 </div>
 
@@ -657,9 +659,9 @@ export default function Password() {
                                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                                             Confirm Password
                                         </label>
-
+                                        <div className="relative">
                                         <input
-                                            type="password"
+                                            type={showConfirmPassword ? "text" : "password"}
                                             name="confirmpassword"
                                             placeholder="Confirm your new password"
                                             value={formData.confirmpassword}
@@ -668,6 +670,22 @@ export default function Password() {
                                             focus:outline-none focus:ring-2 focus:ring-indigo-500
                                             focus:border-transparent transition"
                                         />
+                                       {/* Eye Icon */}
+                                        {/* Eye Icon */}
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setShowConfirmPassword(!showConfirmPassword)
+                                            }
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-indigo-600 focus:outline-none"
+                                        >
+                                            {showConfirmPassword ? (
+                                                <FaEyeSlash />
+                                            ) : (
+                                                <FaEye />
+                                            )}
+                                        </button>
+                                        </div>
 
                                         {/* Match message */}
                                         {formData.confirmpassword && (
